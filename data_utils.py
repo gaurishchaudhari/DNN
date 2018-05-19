@@ -61,6 +61,6 @@ if __name__ == '__main__':
     print('X.shape = ' + str(X.shape))
     print('Y.shape = ' + str(Y.shape))
     
-    plt.scatter(X[0, :], X[1, :], c = Y[0, :], s = 40, cmap = plt.cm.Spectral)
+    plt.scatter(X[0, :], X[1, :], c = Y[0, :], s = 40, edgecolors='black', cmap = plt.cm.Spectral)
     
     print('Done!')
