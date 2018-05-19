@@ -5,9 +5,11 @@ Created on Sat May 19 12:18:48 2018
 
 @author: gaurish
 """
+
 import numpy as np
-from math_utils import *
-from data_utils import load_planar_data
+import matplotlib.pyplot as plt
+import math_utils as mu
+import data_utils as du
 from plot_utils import plot_decision_boundary
 
 def initialize_parameters(layers_dims):
@@ -30,11 +32,11 @@ def forward_step(A_prev, W, b, activation):
     Z = np.dot(W, A_prev) + b
     
     if activation == 'relu':
-        A = relu(Z)
+        A = mu.relu(Z)
     elif activation == 'tanh':
-        A = tanh(Z)
+        A = mu.tanh(Z)
     elif activation == 'sigmoid':
-        A = sigmoid(Z)
+        A = mu.sigmoid(Z)
     else:
         raise ValueError('Unknown %s' % (activation))
     
@@ -86,11 +88,11 @@ def backward_step(dA, cache, activation):
     m = A_prev.shape[1]
     
     if activation == 'relu':
-        dZ = dA * relu_derivative(Z)
+        dZ = dA * mu.relu_derivative(Z)
     elif activation == 'tanh':
-        dZ = dA * tanh_derivative(Z)
+        dZ = dA * mu.tanh_derivative(Z)
     elif activation == 'sigmoid':
-        dZ = dA * sigmoid_derivative(Z)
+        dZ = dA * mu.sigmoid_derivative(Z)
     else:
         raise ValueError('Unknown %s' % (activation))
     
@@ -195,14 +197,14 @@ def evaluate(X, Y, parameters):
 
 if __name__ == '__main__':
     
-    X, Y = load_planar_data()
+    X, Y = du.load_noisy_moons_data()
     
     X_train, Y_train, X_test, Y_test = (X, Y, X, Y)
     m = Y_train.shape[1]
     print('X_train shape = ' + str(X_train.shape))
     print('Y_train shape = ' + str(Y_train.shape))
     print('# of Training Examples = %d' % (m))
-    parameters = model(X_train, Y_train, [5])
+    parameters = model(X_train, Y_train, [4])
     
     print('Train Accuracy = %f %%' % (evaluate(X_train, Y_train, parameters)))
     print('Test Accuracy = %f %%' % (evaluate(X_test, Y_test, parameters)))

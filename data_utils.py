@@ -7,6 +7,7 @@ This is a temporary script file.
 
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn.datasets
 
 def load_planar_data():
     
@@ -31,10 +32,34 @@ def load_planar_data():
 
     return X, Y
 
+def load_noisy_circles_data():
+    X, Y = sklearn.datasets.make_circles(n_samples=200, factor=.5, noise=.3)
+    X, Y = X.T, Y.reshape(1, Y.shape[0])
+    return X, Y
+
+def load_noisy_moons_data():
+    X, Y = sklearn.datasets.make_moons(n_samples=200, noise=.2)
+    X, Y = X.T, Y.reshape(1, Y.shape[0])
+    return X, Y
+
+def load_blobs_data():
+    X, Y = sklearn.datasets.make_blobs(n_samples=200, random_state=5, n_features=2, centers=6)
+    X, Y = X.T, Y.reshape(1, Y.shape[0])
+    Y = Y % 2
+    return X, Y
+    
+def load_guassian_quantiles_data():
+    X, Y = sklearn.datasets.make_gaussian_quantiles(mean=None, cov=0.5, n_samples=200, n_features=2, n_classes=2, shuffle=True, random_state=None)
+    X, Y = X.T, Y.reshape(1, Y.shape[0])
+    return X, Y
+
 
 if __name__ == '__main__':
     
-    X, Y = load_planar_data()
+    X, Y = load_noisy_moons_data()
+    
+    print('X.shape = ' + str(X.shape))
+    print('Y.shape = ' + str(Y.shape))
     
     plt.scatter(X[0, :], X[1, :], c = Y[0, :], s = 40, cmap = plt.cm.Spectral)
     
