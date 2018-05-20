@@ -8,8 +8,10 @@ Created on Sat May 19 16:53:40 2018
 
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 import math_utils as mu
 import data_utils as du
+import helpers as hp
 from plot_utils import plot_decision_boundary
 
 def initialize_parameters(layers_dims, initialization='he'):
@@ -32,6 +34,32 @@ def initialize_parameters(layers_dims, initialization='he'):
         assert(parameters['b' + str(l)].shape == (layers_dims[l], 1))        
     
     return parameters
+
+def initialize_adam(parameters):
+    
+    L = len(parameters) // 2
+    v = {}
+    s = {}
+    
+    for l in range(L):
+        v['dW' + str(l+1)] = np.zeros(parameters['W' + str(l+1)].shape)
+        v['db' + str(l+1)] = np.zeros(parameters['b' + str(l+1)].shape)
+        s['dW' + str(l+1)] = np.zeros(parameters['W' + str(l+1)].shape)
+        s['db' + str(l+1)] = np.zeros(parameters['b' + str(l+1)].shape)
+        
+    return v, s
+
+def initialize_momentum(parameters):
+    
+    L = len(parameters) // 2
+    v = {}
+    
+    for l in range(L):
+        v['dW' + str(l+1)] = np.zeros(parameters['W' + str(l+1)].shape)
+        v['db' + str(l+1)] = np.zeros(parameters['b' + str(l+1)].shape)
+        
+    return v
+
 
 def forward_step(A_prev, W, b, activation, keep_prob):
     
@@ -167,6 +195,45 @@ def update_parameters(parameters, grads, learning_rate):
         
     return parameters
 
+def update_parameters_momentum(parameters, grads, v, learning_rate, beta1 = 0.9):
+    
+    L = len(parameters) // 2
+    
+    for l in range(L):
+        
+        v['dW' + str(l+1)] = beta1 * v['dW' + str(l+1)] + (1 - beta1) * grads['dW' + str(l+1)]
+        v['db' + str(l+1)] = beta1 * v['db' + str(l+1)] + (1 - beta1) * grads['db' + str(l+1)]
+        
+        parameters['W' + str(l+1)] -= learning_rate * v['dW' + str(l+1)]
+        parameters['b' + str(l+1)] -= learning_rate * v['db' + str(l+1)]
+        
+    return parameters, v
+
+
+def update_parameters_adam(parameters, grads, v, s, t, learning_rate, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
+    
+    L = len(parameters) // 2
+    
+    for l in range(L):
+        
+        v['dW' + str(l+1)] = beta1 * v['dW' + str(l+1)] + (1 - beta1) * grads['dW' + str(l+1)]
+        v['db' + str(l+1)] = beta1 * v['db' + str(l+1)] + (1 - beta1) * grads['db' + str(l+1)]
+        
+        vW_corrected = v['dW' + str(l+1)] / (1 - math.pow(beta1, t))
+        vb_corrected = v['db' + str(l+1)] / (1 - math.pow(beta1, t))
+        
+        s['dW' + str(l+1)] = beta2 * s['dW' + str(l+1)] + (1 - beta2) * grads['dW' + str(l+1)] * grads['dW' + str(l+1)]
+        s['db' + str(l+1)] = beta2 * s['db' + str(l+1)] + (1 - beta2) * grads['db' + str(l+1)] * grads['db' + str(l+1)]
+        
+        sW_corrected = s['dW' + str(l+1)] / (1 - math.pow(beta2, t))
+        sb_corrected = s['db' + str(l+1)] / (1 - math.pow(beta2, t))
+           
+        parameters['W' + str(l+1)] -= learning_rate * (vW_corrected / (np.sqrt(sW_corrected) + epsilon))
+        parameters['b' + str(l+1)] -= learning_rate * (vb_corrected / (np.sqrt(sb_corrected) + epsilon))
+        
+    return parameters, v, s
+
+
 def forward_prop_and_compute_cost(X, Y, parameters, hidden_activation, lambd, keep_prob):
     AL, _ = forward_propagation(X, parameters, hidden_activation, keep_prob)
     return compute_cost(AL, Y, parameters, lambd)
@@ -174,11 +241,16 @@ def forward_prop_and_compute_cost(X, Y, parameters, hidden_activation, lambd, ke
 def model(X, 
           Y, 
           hidden_layers_dims, 
-          learning_rate = 1.2,
-          num_iter = 5000,
+          learning_rate,
+          num_epochs,
+          minibatch_size,
           hidden_activation = 'relu',
-          lambd = 0.4,
-          keep_prob = 0.99,
+          lambd = 0.0,
+          keep_prob = 1.0,
+          optimizer = 'gd',
+          beta1 = 0.9,
+          beta2 = 0.999,
+          epsilon = 1e-8, 
           print_cost = True):
     
     layers_dims = []
@@ -188,25 +260,45 @@ def model(X,
     
     parameters = initialize_parameters(layers_dims)
     
-    costs = []
+    if optimizer == 'momentum':
+        v = initialize_momentum(parameters)
+    if optimizer == 'adam':
+        v, s = initialize_adam(parameters)
     
-    for i in range(num_iter):
+    costs = []
+    t = 0
+    seed  = 10
+    
+    for i in range(num_epochs):
         
-        AL, caches = forward_propagation(X, parameters, hidden_activation, keep_prob)
+        seed = seed + 1
+        minibatches = hp.random_minibatches(X, Y, minibatch_size, seed)
         
-        cost = compute_cost(AL, Y, parameters, lambd)
+        for minibatch in minibatches:
+            
+            (minibatch_X, minibatch_Y) = minibatch
         
-        dAL = compute_cost_derivative(AL, Y)
-        
-        grads = backward_propagation(dAL, caches, hidden_activation, lambd, keep_prob)
-        
-        if i > 0 and keep_prob == 1.0 and i % 1000 == 0:
-            mu.grad_check(lambda params: forward_prop_and_compute_cost(X, Y, params, hidden_activation, lambd, keep_prob), parameters, grads)
-        
-        parameters = update_parameters(parameters, grads, learning_rate)
-        
+            AL, caches = forward_propagation(minibatch_X, parameters, hidden_activation, keep_prob)
+            
+            cost = compute_cost(AL, minibatch_Y, parameters, lambd)
+            
+            dAL = compute_cost_derivative(AL, minibatch_Y)
+            
+            grads = backward_propagation(dAL, caches, hidden_activation, lambd, keep_prob)
+            
+            if i > 0 and keep_prob == 1.0 and i % 1000 == 0:
+                hp.grad_check(lambda params: forward_prop_and_compute_cost(minibatch_X, minibatch_Y, params, hidden_activation, lambd, keep_prob), parameters, grads)
+            
+            if optimizer == 'gd':
+                parameters = update_parameters(parameters, grads, learning_rate)
+            elif optimizer == 'momentum':
+                parameters, v = update_parameters_momentum(parameters, grads, v, learning_rate, beta1)
+            elif optimizer == 'adam':
+                t = t + 1
+                parameters, v, s = update_parameters_adam(parameters, grads, v, s, t, learning_rate, beta1, beta2, epsilon)
+                
         if print_cost and i % 100 == 0:
-            print('Cost after iteration %d: %f' %(i, cost))
+            print('Cost after epoch %d: %f' %(i, cost))
             costs.append(cost)
     
     # Plot Learning curve
@@ -231,7 +323,6 @@ def evaluate(X, Y, parameters, hidden_activation):
     predictions = predict(X, parameters, hidden_activation)
     accuracy = (np.dot(Y, predictions.T) + np.dot(1-Y, (1-predictions).T)) * 100.0 / float(Y.shape[1])
     return accuracy
-    
 
 if __name__ == '__main__':
     
@@ -245,10 +336,15 @@ if __name__ == '__main__':
     parameters = model(X_train, Y_train, 
                        hidden_layers_dims = [10, 5, 3],
                        learning_rate = 0.1,
-                       num_iter = 10000,
+                       num_epochs = 1000,
+                       minibatch_size = 64,
                        hidden_activation = hidden_activation,
-                       lambd = 0.5,
+                       lambd = 0.2,
                        keep_prob = 1,
+                       optimizer = 'adam',
+                       beta1 = 0.9,
+                       beta2 = 0.999,
+                       epsilon = 1e-8, 
                        print_cost = True)
     
     print('Train Accuracy = %f %%' % (evaluate(X_train, Y_train, parameters, hidden_activation)))
