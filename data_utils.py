@@ -53,10 +53,20 @@ def load_guassian_quantiles_data():
     X, Y = X.T, Y.reshape(1, Y.shape[0])
     return X, Y
 
+def load_conc_circles_data():
+    np.random.seed(1)
+    train_X, train_Y = sklearn.datasets.make_circles(n_samples=300, noise=.05)
+    np.random.seed(2)
+    test_X, test_Y = sklearn.datasets.make_circles(n_samples=100, noise=.05)
+    train_X = train_X.T
+    train_Y = train_Y.reshape((1, train_Y.shape[0]))
+    test_X = test_X.T
+    test_Y = test_Y.reshape((1, test_Y.shape[0]))
+    return train_X, train_Y, test_X, test_Y
 
 if __name__ == '__main__':
     
-    X, Y = load_noisy_moons_data()
+    X, Y, X1, Y1 = load_conc_circles_data()
     
     print('X.shape = ' + str(X.shape))
     print('Y.shape = ' + str(Y.shape))
