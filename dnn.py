@@ -167,6 +167,10 @@ def update_parameters(parameters, grads, learning_rate):
         
     return parameters
 
+def forward_prop_and_compute_cost(X, Y, parameters, hidden_activation, lambd, keep_prob):
+    AL, _ = forward_propagation(X, parameters, hidden_activation, keep_prob)
+    return compute_cost(AL, Y, parameters, lambd)
+
 def model(X, 
           Y, 
           hidden_layers_dims, 
@@ -195,6 +199,9 @@ def model(X,
         dAL = compute_cost_derivative(AL, Y)
         
         grads = backward_propagation(dAL, caches, hidden_activation, lambd, keep_prob)
+        
+        if i > 0 and keep_prob == 1.0 and i % 1000 == 0:
+            mu.grad_check(lambda params: forward_prop_and_compute_cost(X, Y, params, hidden_activation, lambd, keep_prob), parameters, grads)
         
         parameters = update_parameters(parameters, grads, learning_rate)
         
@@ -241,7 +248,7 @@ if __name__ == '__main__':
                        num_iter = 10000,
                        hidden_activation = hidden_activation,
                        lambd = 0.5,
-                       keep_prob = 0.999,
+                       keep_prob = 1,
                        print_cost = True)
     
     print('Train Accuracy = %f %%' % (evaluate(X_train, Y_train, parameters, hidden_activation)))
