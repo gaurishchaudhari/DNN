@@ -119,8 +119,8 @@ def grad_check(cost_function, parameters, grads, epsilon = 1e-7):
     diff = numerator / float(denominator)
     
     if np.isnan(diff) or diff > 2e-7:
-        print('There is a mistake in backward propagation. Difference = ' + str(diff))
+        print('There is a mistake in backward propagation. Grad-Check difference = ' + str(diff))
     else:
-        print('The backward propagation works perfectly fine. Difference = ' + str(diff))
+        print('The backward propagation works perfectly fine. Grad-Check difference = ' + str(diff))
     
     return diff

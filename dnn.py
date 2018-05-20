@@ -111,8 +111,6 @@ def forward_propagation(X, parameters, hidden_activation, keep_prob):
     return A, caches
 
 def compute_cost(AL, Y, parameters, lambd):
-    assert(np.any(AL))
-    assert(np.any(1-AL))
     
     m = Y.shape[1]
     cost =  -1./m * np.sum(np.multiply(Y, np.log(AL)) + np.multiply(1 - Y,  np.log(1 - AL))) 
@@ -251,7 +249,8 @@ def model(X,
           beta1 = 0.9,
           beta2 = 0.999,
           epsilon = 1e-8, 
-          print_cost = True):
+          print_cost = False,
+          show_plot = False):
     
     layers_dims = []
     layers_dims.append(X_train.shape[0])
@@ -286,7 +285,7 @@ def model(X,
             
             grads = backward_propagation(dAL, caches, hidden_activation, lambd, keep_prob)
             
-            if i > 0 and keep_prob == 1.0 and i % 1000 == 0:
+            if print_cost and keep_prob == 1.0 and i > 0 and i % 1000 == 0:
                 hp.grad_check(lambda params: forward_prop_and_compute_cost(minibatch_X, minibatch_Y, params, hidden_activation, lambd, keep_prob), parameters, grads)
             
             if optimizer == 'gd':
@@ -301,16 +300,17 @@ def model(X,
             print('Cost after epoch %d: %f' %(i, cost))
             costs.append(cost)
     
-    # Plot Learning curve
-    plt.plot(costs)
-    plt.ylabel('Cost')
-    plt.xlabel('# of iterations (per 100)')
-    plt.title('Learning rate = ' + str(learning_rate))  
-    plt.show()      
-    
-    # Plot Decision Boundary
-    print('decision boundary')
-    plot_decision_boundary(lambda x: predict(x.T, parameters, hidden_activation), X, Y)
+    if show_plot:
+        # Plot Learning curve
+        plt.plot(costs)
+        plt.ylabel('Cost')
+        plt.xlabel('# of iterations (per 100)')
+        plt.title('Learning rate = ' + str(learning_rate))  
+        plt.show()      
+        
+        # Plot Decision Boundary
+        print('Decision Boundary')
+        plot_decision_boundary(lambda x: predict(x.T, parameters, hidden_activation), X, Y)
     
     return parameters
 
@@ -335,17 +335,18 @@ if __name__ == '__main__':
     hidden_activation = 'relu'
     parameters = model(X_train, Y_train, 
                        hidden_layers_dims = [10, 5, 3],
-                       learning_rate = 0.1,
-                       num_epochs = 1000,
+                       learning_rate = 0.08,
+                       num_epochs = 2000,
                        minibatch_size = 64,
                        hidden_activation = hidden_activation,
                        lambd = 0.2,
-                       keep_prob = 1,
+                       keep_prob = 1.0,
                        optimizer = 'adam',
                        beta1 = 0.9,
                        beta2 = 0.999,
                        epsilon = 1e-8, 
-                       print_cost = True)
+                       print_cost = True,
+                       show_plot = True)
     
     print('Train Accuracy = %f %%' % (evaluate(X_train, Y_train, parameters, hidden_activation)))
     print('Test Accuracy = %f %%' % (evaluate(X_test, Y_test, parameters, hidden_activation)))
