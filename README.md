@@ -1,5 +1,16 @@
 # Deep Neural Networks
 
-This is Numpy implementation of DNN.
+This includes Numpy implementation of DNN.
 
-Planar Dataset classification.
+# Features
+
+Various Activation functions.
+
+Parameter Initialization Methods.
+
+Gradient Check calculation.
+
+Random Minibatches.
+
+Optimization Techniques (Momentum, Adam).
+
