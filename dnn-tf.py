@@ -12,7 +12,7 @@ from tensorflow.python.framework import ops
 import helpers as hp
 import data_utils as du
 
-def create_placeholder(X_arr, Y_arr):
+def create_placeholders(X_arr, Y_arr):
     
     (n_x, m) = X_arr.shape
     n_y = Y_arr.shape[0]
@@ -89,8 +89,7 @@ def model(X_arr, Y_arr,
     layers_dims.extend(hidden_layers_dims)
     layers_dims.append(n_y)
     
-    X = tf.placeholder(tf.float32, (n_x, None), name = 'X')
-    Y = tf.placeholder(tf.float32, (n_y, None), name = 'Y')
+    X, Y = create_placeholders(X_arr, Y_arr)
     
     parameters = initialize_parameters(layers_dims)
     
@@ -144,7 +143,7 @@ def predict(X, parameters, hidden_activation):
 
 def evaluate(X_arr, Y_arr, parameters, hidden_activation):
     
-    X, Y = create_placeholder(X_arr, Y_arr)
+    X, Y = create_placeholders(X_arr, Y_arr)
     predictions = predict(X, parameters, hidden_activation)
     labels = tf.argmax(Y)
     correct_predictions = tf.equal(predictions, labels)
