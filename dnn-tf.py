@@ -11,6 +11,8 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 import helpers as hp
 import data_utils as du
+import matplotlib.pyplot as plt
+from plot_utils import plot_decision_boundary
 
 def create_placeholders(X_arr, Y_arr):
     
@@ -119,35 +121,42 @@ def model(X_arr, Y_arr,
                 
                 epoch_cost += minibatch_cost
                 
-            epoch_cost /= m
+            #epoch_cost /= m
             
             if print_cost and i % 100 == 0:
                 print('Cost after epoch %d: %f' %(i, epoch_cost))
                 costs.append(epoch_cost)
         
+        parameters = sess.run(parameters)
+        
         if show_plot:    
-            # plot cost
-            # plot decision boundary
+            plt.plot(costs)
+            plt.ylabel('Cost')
+            plt.xlabel('# of iterations (per 100)')
+            plt.title('Learning rate = ' + str(learning_rate))  
+            plt.show()      
+            
+            # Plot Decision Boundary
+            #print('Decision Boundary')
+            #plot_decision_boundary(lambda x: predict_plot(x, parameters, hidden_activation), X_arr, Y_arr)
             pass
 
-        parameters = sess.run(parameters)
-    
     return parameters
                     
-    
+
 def predict(X, parameters, hidden_activation):
     
     ZL = forward_propagation(X, parameters, hidden_activation)
-    AL = tf.nn.sigmoid(ZL)    
-    return tf.argmax(AL)
+    AL = tf.nn.sigmoid(ZL)
+    return tf.greater(AL, 0.5)
 
 def evaluate(X_arr, Y_arr, parameters, hidden_activation):
     
     X, Y = create_placeholders(X_arr, Y_arr)
     predictions = predict(X, parameters, hidden_activation)
-    labels = tf.argmax(Y)
+    labels = tf.equal(Y, 1.0)
     correct_predictions = tf.equal(predictions, labels)
-    accuracy = tf.reduce_mean(tf.cast(correct_predictions, 'float32'))
+    accuracy = tf.reduce_mean(tf.cast(correct_predictions, 'float32')) * 100.0
     with tf.Session():
         return accuracy.eval({X: X_arr, Y: Y_arr})    
         
@@ -155,6 +164,8 @@ def evaluate(X_arr, Y_arr, parameters, hidden_activation):
 if __name__ == '__main__':
     
     X_train, Y_train, X_test, Y_test = du.load_conc_circles_data()
+    
+    print(Y_test)
     m = Y_train.shape[1]
     print('X_train shape = ' + str(X_train.shape))
     print('Y_train shape = ' + str(Y_train.shape))
@@ -163,7 +174,7 @@ if __name__ == '__main__':
     hidden_activation = 'relu'
     parameters = model(X_train, Y_train, 
                        hidden_layers_dims = [10, 5, 3],
-                       learning_rate = 0.08,
+                       learning_rate = 1.3,
                        num_epochs = 2000,
                        minibatch_size = 64,
                        hidden_activation = hidden_activation,
