@@ -62,11 +62,19 @@ def forward_propagation(X, parameters, hidden_activation):
     
     return Z
     
-def compute_cost(ZL, Y):
+def compute_cost(ZL, Y, parameters, m, lambd):
     
     logits = tf.transpose(ZL)
     labels = tf.transpose(Y)
     cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = logits, labels = labels)) 
+    
+    regularizers = 0
+    L = len(parameters) // 2
+    for l in range(L):
+        regularizers += tf.nn.l2_loss(parameters['W' + str(l+1)])
+    
+    cost += (1. / m) * (lambd / 2.) * regularizers
+    
     return cost
 
 def model(X_arr, Y_arr,
@@ -74,6 +82,7 @@ def model(X_arr, Y_arr,
           learning_rate,
           num_epochs,
           minibatch_size,
+          lambd,
           hidden_activation = 'relu',
           print_cost = False,
           show_plot = False):
@@ -97,7 +106,7 @@ def model(X_arr, Y_arr,
     
     ZL = forward_propagation(X, parameters, hidden_activation)
     
-    cost = compute_cost(ZL, Y)
+    cost = compute_cost(ZL, Y, parameters, m, lambd)
             
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(cost)
     
@@ -179,9 +188,10 @@ if __name__ == '__main__':
     hidden_activation = 'relu'
     parameters = model(X_train, Y_train, 
                        hidden_layers_dims = [10, 5, 3],
-                       learning_rate = 0.008,
+                       learning_rate = 0.08,
                        num_epochs = 2000,
-                       minibatch_size = 32,
+                       minibatch_size = 64,
+                       lambd = 0.2,
                        hidden_activation = hidden_activation,
                        print_cost = True,
                        show_plot = True)
