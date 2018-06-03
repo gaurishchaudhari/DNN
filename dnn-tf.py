@@ -12,12 +12,10 @@ from tensorflow.python.framework import ops
 import helpers as hp
 import data_utils as du
 import matplotlib.pyplot as plt
-from plot_utils import plot_decision_boundary
+#from plot_utils import plot_decision_boundary
 
-def create_placeholders(X_arr, Y_arr):
+def create_placeholders(n_x, n_y):
     
-    (n_x, m) = X_arr.shape
-    n_y = Y_arr.shape[0]
     X = tf.placeholder(tf.float32, (n_x, None), name = 'X')
     Y = tf.placeholder(tf.float32, (n_y, None), name = 'Y')
     return X, Y
@@ -50,6 +48,8 @@ def forward_propagation(X, parameters, hidden_activation):
         
         if hidden_activation == 'relu':
             A = tf.nn.relu(Z)
+        elif hidden_activation == 'sigmoid':
+            A = tf.nn.sigmoid(Z)
         elif hidden_activation == 'tanh':
             A = tf.nn.tanh(Z)
         else:
@@ -65,8 +65,8 @@ def forward_propagation(X, parameters, hidden_activation):
 def compute_cost(ZL, Y):
     
     logits = tf.transpose(ZL)
-    labels = tf.transpose(Y) 
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = labels)) 
+    labels = tf.transpose(Y)
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = logits, labels = labels)) 
     return cost
 
 def model(X_arr, Y_arr,
@@ -91,7 +91,7 @@ def model(X_arr, Y_arr,
     layers_dims.extend(hidden_layers_dims)
     layers_dims.append(n_y)
     
-    X, Y = create_placeholders(X_arr, Y_arr)
+    X, Y = create_placeholders(n_x, n_y)
     
     parameters = initialize_parameters(layers_dims)
     
@@ -121,13 +121,13 @@ def model(X_arr, Y_arr,
                 
                 epoch_cost += minibatch_cost
                 
-            #epoch_cost /= m
+            epoch_cost /= minibatch_size
             
             if print_cost and i % 100 == 0:
                 print('Cost after epoch %d: %f' %(i, epoch_cost))
                 costs.append(epoch_cost)
         
-        parameters = sess.run(parameters)
+        parameters_out = sess.run(parameters)
         
         if show_plot:    
             plt.plot(costs)
@@ -141,23 +141,29 @@ def model(X_arr, Y_arr,
             #plot_decision_boundary(lambda x: predict_plot(x, parameters, hidden_activation), X_arr, Y_arr)
             pass
 
-    return parameters
+    return parameters_out
                     
 
 def predict(X, parameters, hidden_activation):
     
     ZL = forward_propagation(X, parameters, hidden_activation)
     AL = tf.nn.sigmoid(ZL)
-    return tf.greater(AL, 0.5)
+    return AL, tf.greater(AL, 0.5)
 
 def evaluate(X_arr, Y_arr, parameters, hidden_activation):
     
-    X, Y = create_placeholders(X_arr, Y_arr)
-    predictions = predict(X, parameters, hidden_activation)
-    labels = tf.equal(Y, 1.0)
+    (n_x, m) = X_arr.shape
+    n_y = Y_arr.shape[0]
+    
+    X, Y = create_placeholders(n_x, n_y)
+    
+    AL, predictions = predict(X, parameters, hidden_activation)
+    labels = tf.equal(Y, 1)
     correct_predictions = tf.equal(predictions, labels)
+    
     accuracy = tf.reduce_mean(tf.cast(correct_predictions, 'float32')) * 100.0
-    with tf.Session():
+    
+    with tf.Session() as sess:
         return accuracy.eval({X: X_arr, Y: Y_arr})    
         
     
@@ -165,7 +171,6 @@ if __name__ == '__main__':
     
     X_train, Y_train, X_test, Y_test = du.load_conc_circles_data()
     
-    print(Y_test)
     m = Y_train.shape[1]
     print('X_train shape = ' + str(X_train.shape))
     print('Y_train shape = ' + str(Y_train.shape))
@@ -174,9 +179,9 @@ if __name__ == '__main__':
     hidden_activation = 'relu'
     parameters = model(X_train, Y_train, 
                        hidden_layers_dims = [10, 5, 3],
-                       learning_rate = 1.3,
+                       learning_rate = 0.008,
                        num_epochs = 2000,
-                       minibatch_size = 64,
+                       minibatch_size = 32,
                        hidden_activation = hidden_activation,
                        print_cost = True,
                        show_plot = True)
